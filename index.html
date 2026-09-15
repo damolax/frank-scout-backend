@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#111827" />
+  <title>Author Letter Desk</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">AL</div>
+        <div>
+          <strong>Author Letter Desk</strong>
+          <span>Research → Message → Send</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Primary navigation">
+        <button class="nav-item active" data-page="research"><span>01</span> Research</button>
+        <button class="nav-item" data-page="authors"><span>02</span> Authors</button>
+        <button class="nav-item" data-page="messages"><span>03</span> Messages</button>
+        <button class="nav-item" data-page="send"><span>04</span> Send</button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="mini-stat"><span>Authors</span><strong id="sideAuthorCount">0</strong></div>
+        <div class="mini-stat"><span>Ready to send</span><strong id="sideReadyCount">0</strong></div>
+        <div class="mini-stat"><span>Sent</span><strong id="sideSentCount">0</strong></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button mobile-only" id="menuToggle" aria-label="Open menu">☰</button>
+        <div>
+          <p class="eyebrow" id="pageEyebrow">AUTHOR DISCOVERY</p>
+          <h1 id="pageTitle">Research</h1>
+        </div>
+        <div class="top-actions">
+          <button class="button ghost" id="backupBtn">Backup</button>
+          <label class="button ghost file-button">Restore<input type="file" id="restoreInput" accept="application/json,.json" /></label>
+          <button class="button primary" id="quickAddBtn">+ Add author</button>
+        </div>
+      </header>
+
+      <section class="page active" id="page-research">
+        <div class="notice backend-notice">
+          <div>
+            <strong>No API tokens required.</strong>
+            <span>The free research backend searches public web sources. ChatGPT is only used later for deeper reasoning and message writing.</span>
+          </div>
+          <div class="backend-health"><span id="backendDot" class="health-dot"></span><span id="backendStatus">Checking research server…</span></div>
+        </div>
+
+        <div class="grid two">
+          <article class="panel">
+            <div class="panel-head">
+              <div>
+                <p class="kicker">DISCOVERY BRIEF</p>
+                <h2>Tell Letter Desk who you want to find</h2>
+              </div>
+            </div>
+            <div class="form-grid">
+              <label>Country / region<input id="criteriaCountry" placeholder="e.g. UAE, UK, Canada" /></label>
+              <label>Genre / niche<input id="criteriaGenre" placeholder="e.g. literary fiction" /></label>
+              <label>Author preference<select id="criteriaGender"><option value="Any">Any</option><option value="Male preferred">Male preferred</option><option value="Female preferred">Female preferred</option></select></label>
+              <label>Target count<input id="criteriaCount" type="number" min="1" max="200" value="25" /></label>
+              <label class="full">Required checks<textarea id="criteriaRequirements" rows="4">Official website preferred; public professional email required; verify the email source; identify books, genre, recent activity, and a specific personalization hook; avoid duplicates.</textarea></label>
+            </div>
+            <div class="button-row wrap">
+              <button class="button primary" id="autoDiscoverBtn">Find authors automatically</button>
+              <button class="button secondary" id="copyDiscoveryPrompt">Copy ChatGPT discovery prompt</button>
+              <button class="button ghost" id="googleDiscovery">Open Google</button>
+            </div>
+            <div class="research-run" id="discoveryRun" aria-live="polite"></div>
+          </article>
+
+          <article class="panel accent-panel">
+            <p class="kicker">WORKFLOW</p>
+            <h2>Keep the process simple</h2>
+            <ol class="workflow-list">
+              <li><span>1</span><div><strong>Find / collect authors</strong><small>Use your discovery prompt or existing author list.</small></div></li>
+              <li><span>2</span><div><strong>Send research to ChatGPT</strong><small>ChatGPT analyzes each author and recommends the right angle.</small></div></li>
+              <li><span>3</span><div><strong>Import first messages</strong><small>Bring the final subject + message list back into Letter Desk.</small></div></li>
+              <li><span>4</span><div><strong>Send one after another</strong><small>Copy/open email, mark sent, move to the next author.</small></div></li>
+            </ol>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head split">
+            <div>
+              <p class="kicker">RESEARCH QUEUE</p>
+              <h2>Authors waiting for deeper research</h2>
+            </div>
+            <div class="button-row wrap">
+              <label class="button secondary file-button">Import authors<input type="file" id="authorImport" accept=".csv,.xlsx,.xls,.json" /></label>
+              <button class="button primary" id="autoResearchSelected">Research selected automatically</button>
+              <button class="button secondary" id="copyResearchBatch">Copy selected for ChatGPT</button>
+              <button class="button ghost" id="selectAllResearch">Select all</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th class="check"><input type="checkbox" id="researchMasterCheck" /></th><th>Author</th><th>Country</th><th>Website / Email</th><th>Research</th><th></th></tr></thead>
+              <tbody id="researchTable"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="researchEmpty">
+            <strong>No authors yet.</strong>
+            <span>Add an author or import a researched list to begin.</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="page" id="page-authors">
+        <div class="stats-row">
+          <div class="stat-card"><span>Total authors</span><strong id="statAuthors">0</strong></div>
+          <div class="stat-card"><span>Research complete</span><strong id="statResearchReady">0</strong></div>
+          <div class="stat-card"><span>Message ready</span><strong id="statMessageReady">0</strong></div>
+          <div class="stat-card"><span>Sent</span><strong id="statSent">0</strong></div>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head split">
+            <div>
+              <p class="kicker">AUTHOR DATABASE</p>
+              <h2>All researched prospects</h2>
+            </div>
+            <div class="toolbar">
+              <input class="search-input" id="authorSearch" placeholder="Search author, country, genre, email…" />
+              <select id="authorStatusFilter"><option value="all">All statuses</option><option value="needs-research">Needs research</option><option value="research-ready">Research ready</option><option value="message-ready">Message ready</option><option value="sent">Sent</option></select>
+              <button class="button secondary" id="exportAuthors">Export CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Author</th><th>Country</th><th>Genre / Books</th><th>Contact</th><th>Hook / Activity</th><th>Status</th><th></th></tr></thead>
+              <tbody id="authorsTable"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="authorsEmpty"><strong>No matching authors.</strong><span>Import or add authors from the Research page.</span></div>
+        </article>
+      </section>
+
+      <section class="page" id="page-messages">
+        <div class="grid two message-import-grid">
+          <article class="panel">
+            <p class="kicker">CHATGPT HANDOFF</p>
+            <h2>Send author research to ChatGPT</h2>
+            <p class="muted">Select research-ready authors, then copy one structured prompt. ChatGPT can research what to offer, the personalization angle, subject line, and the first message.</p>
+            <div class="field-stack">
+              <label>Message style<textarea id="messageInstruction" rows="6">Research each author thoroughly from the supplied details and public sources. Decide the most relevant professional opportunity or service for the author. Do not force an offer when the evidence is weak. Write a concise, human first outreach message that begins with specific research, demonstrates value, asks one purposeful question, and avoids claiming to have read work unless verified. Return a table with: Author, Email, Subject, First Message, Offer / Opportunity, Personalization Hook, Research Notes.</textarea></label>
+            </div>
+            <div class="button-row wrap">
+              <button class="button primary" id="copyChatGPTBatch">Copy ChatGPT batch prompt</button>
+              <button class="button secondary" id="downloadResearchCsv">Export research CSV</button>
+            </div>
+          </article>
+
+          <article class="panel">
+            <p class="kicker">IMPORT FINISHED COPY</p>
+            <h2>Bring the first messages back</h2>
+            <p class="muted">Import the CSV/XLSX/JSON returned from ChatGPT. Letter Desk matches messages by email first, then by author name.</p>
+            <div class="dropzone" id="messageDropzone">
+              <strong>Drop your finished message file here</strong>
+              <span>Expected: Author · Email · Subject · First Message</span>
+              <label class="button primary file-button">Choose file<input type="file" id="messageImport" accept=".csv,.xlsx,.xls,.json" /></label>
+            </div>
+            <div class="import-result" id="messageImportResult"></div>
+          </article>
+        </div>
+
+        <article class="panel">
+          <div class="panel-head split">
+            <div><p class="kicker">MESSAGE LIST</p><h2>Imported first messages</h2></div>
+            <div class="toolbar"><input class="search-input" id="messageSearch" placeholder="Search messages…" /><select id="messageStatusFilter"><option value="all">All</option><option value="ready">Ready</option><option value="sent">Sent</option></select></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Author</th><th>Email</th><th>Subject</th><th>First message</th><th>Status</th><th></th></tr></thead>
+              <tbody id="messagesTable"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="messagesEmpty"><strong>No first messages imported yet.</strong><span>Copy the ChatGPT batch prompt above, then import the finished list.</span></div>
+        </article>
+      </section>
+
+      <section class="page" id="page-send">
+        <div class="send-shell">
+          <article class="send-main panel" id="sendMain">
+            <div class="send-progress-head">
+              <div><p class="kicker">SENDING QUEUE</p><h2 id="sendAuthorName">No message ready</h2><p class="muted" id="sendPosition">0 of 0</p></div>
+              <div class="progress-ring"><strong id="sendProgressPct">0%</strong></div>
+            </div>
+            <div class="progress-bar"><span id="sendProgressBar"></span></div>
+
+            <div id="sendContent" class="send-content hidden">
+              <div class="contact-strip">
+                <div><span>Email</span><strong id="sendEmail"></strong></div>
+                <div><span>Website</span><a id="sendWebsite" target="_blank" rel="noreferrer"></a></div>
+                <div><span>Country</span><strong id="sendCountry"></strong></div>
+              </div>
+
+              <label>Subject<input id="sendSubject" /></label>
+              <label>Message<textarea id="sendMessage" rows="13"></textarea></label>
+
+              <div class="button-row send-buttons wrap">
+                <button class="button secondary" id="copySubjectBtn">Copy subject</button>
+                <button class="button secondary" id="copyMessageBtn">Copy message</button>
+                <button class="button secondary" id="openEmailBtn">Open email</button>
+                <button class="button primary" id="markSentBtn">Mark sent & next</button>
+              </div>
+              <div class="send-nav">
+                <button class="text-button" id="prevSend">← Previous</button>
+                <button class="text-button" id="skipSend">Skip for now</button>
+                <button class="text-button" id="nextSend">Next →</button>
+              </div>
+            </div>
+
+            <div class="empty send-empty" id="sendEmpty"><strong>Your sending queue is empty.</strong><span>Import first messages on the Messages page. Any unsent message with an email will appear here.</span></div>
+          </article>
+
+          <aside class="send-side panel">
+            <p class="kicker">RESEARCH SNAPSHOT</p>
+            <h3>Why this author?</h3>
+            <dl class="snapshot" id="sendSnapshot">
+              <div><dt>Genre</dt><dd>—</dd></div><div><dt>Books</dt><dd>—</dd></div><div><dt>Recent activity</dt><dd>—</dd></div><div><dt>Personalization hook</dt><dd>—</dd></div><div><dt>Offer / opportunity</dt><dd>—</dd></div>
+            </dl>
+            <div class="queue-summary">
+              <div><span>Ready</span><strong id="queueReady">0</strong></div>
+              <div><span>Sent</span><strong id="queueSent">0</strong></div>
+              <div><span>Skipped</span><strong id="queueSkipped">0</strong></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="authorDialog" class="modal">
+    <form method="dialog" id="authorForm">
+      <div class="modal-head"><div><p class="kicker">AUTHOR RECORD</p><h2 id="authorDialogTitle">Add author</h2></div><button class="icon-button" value="cancel" aria-label="Close">×</button></div>
+      <input type="hidden" id="editAuthorId" />
+      <div class="form-grid modal-grid">
+        <label>Author name *<input id="fName" required /></label>
+        <label>Country<input id="fCountry" /></label>
+        <label>Website<input id="fWebsite" placeholder="https://…" /></label>
+        <label>Public email<input id="fEmail" type="email" /></label>
+        <label>Email source URL<input id="fEmailSource" placeholder="https://…" /></label>
+        <label>Genre<input id="fGenre" /></label>
+        <label class="full">Books / works<textarea id="fBooks" rows="2"></textarea></label>
+        <label class="full">Short bio<textarea id="fBio" rows="3"></textarea></label>
+        <label class="full">Recent activity<textarea id="fActivity" rows="2"></textarea></label>
+        <label class="full">Personalization hook<textarea id="fHook" rows="2"></textarea></label>
+        <label class="full">Offer / opportunity<textarea id="fOffer" rows="2"></textarea></label>
+        <label class="full">Research notes / source links<textarea id="fNotes" rows="3"></textarea></label>
+      </div>
+      <div class="modal-actions"><button class="button ghost" value="cancel">Cancel</button><button class="button primary" id="saveAuthorBtn" value="default">Save author</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="messageDialog" class="modal small-modal">
+    <form method="dialog" id="messageForm">
+      <div class="modal-head"><div><p class="kicker">FIRST MESSAGE</p><h2 id="messageDialogTitle">Edit message</h2></div><button class="icon-button" value="cancel">×</button></div>
+      <input type="hidden" id="editMessageId" />
+      <div class="field-stack">
+        <label>Author<input id="mAuthor" /></label>
+        <label>Email<input id="mEmail" type="email" /></label>
+        <label>Subject<input id="mSubject" /></label>
+        <label>First message<textarea id="mBody" rows="12"></textarea></label>
+        <label>Offer / opportunity<textarea id="mOffer" rows="2"></textarea></label>
+      </div>
+      <div class="modal-actions"><button class="button ghost" value="cancel">Cancel</button><button class="button primary" id="saveMessageBtn" value="default">Save message</button></div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>
