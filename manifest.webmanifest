@@ -1,0 +1,9 @@
+{
+  "name": "Author Letter Desk",
+  "short_name": "Letter Desk",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f5f7",
+  "theme_color": "#111827",
+  "description": "Simple author research, ChatGPT handoff, message import, and sequential outreach desk."
+}
